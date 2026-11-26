@@ -77,9 +77,14 @@ def calculate(records, *, today, alpha=.28, horizon=7, min_days=14):
         errors = training_backtest(series,alpha)
         model_mae, naive_mae = score_competing_models(errors)
         forecast = [rolling_forecast(series, day, alpha) for day in range(today,today+horizon)] if enough else []
+        observed = dict(series)
+        baseline = [observed.get(day-7) for day in range(today,today+horizon)] if enough else []
+        baseline_ready = bool(baseline) and all(value is not None for value in baseline)
         result.append({'store':store,'sku':sku,'history_days':len(series),'training_errors':errors,
                         'model_mae':model_mae,'naive_mae':naive_mae,'daily_forecast':forecast,
-                        'forecast_total':fsum(forecast) if enough else None,
+                        'forecast_total':fsum(forecast) if enough else None,'horizon':horizon,
+                        'baseline_daily_forecast':baseline,'baseline_forecast_total':fsum(baseline) if baseline_ready else None,
+                        'baseline_ready':baseline_ready,
                         'reason':'FORECAST_READY' if enough else 'SOURCE_HISTORY_TOO_SPARSE',
                         'demand_evidence':forecast_evidence(series,today,forecast,errors),
                         'fit_id':sha256(repr((series,today,alpha,horizon,min_days,'sba-w7')).encode()).hexdigest()[:16]})

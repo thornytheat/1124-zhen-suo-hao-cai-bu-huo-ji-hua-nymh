@@ -118,3 +118,39 @@ def test_cash_constrained_request_lines_keep_a_positive_physically_fillable_gap(
         assert line['validated']
         assert 0<=line['allocated_cases']<line['requested_cases']
         assert line['shortage']>0
+
+
+def test_every_order_uses_the_chosen_forecast_and_its_own_residuals():
+    batch=completed_case(48)
+    modelling={(row['store'],row['sku']):row for row in batch['stages'][2]['records']}
+    intervals={(row['store'],row['sku']):row for row in batch['stages'][3]['records']}
+    orders={(row['store'],row['sku']):row for row in batch['stages'][4]['records']}
+    for location,model in modelling.items():
+        method=model['forecast_method']
+        expected=model['baseline_daily_forecast'] if method=='BASELINE' else model['model_daily_forecast']
+        if model['forecast_total'] is None:
+            assert expected==[] and model['daily_forecast']==[]
+        else:
+            assert model['daily_forecast']==expected
+            assert model['forecast_total']==pytest.approx(sum(expected))
+        order=orders[location]
+        assert order['forecast']==(model['forecast_total'] or 0)
+        assert order['buffer']==intervals[location].get('cycle_buffer') or not order['validated']
+    assert all(row['method'] in {'同期基线','周内中位数/Croston'} for row in batch['rows'])
+    assert sum(row['method']=='同期基线' for row in batch['rows'])==batch['metrics']['改用同期基线']
+
+
+def test_switching_methods_rebuilds_safety_stock_from_that_methods_residuals():
+    from clinicstock.demand_smoothing.model_selection import selection_days
+    from clinicstock.pipeline import daily_accounting, read_warehouse, settled_days, SNAPSHOT
+    from clinicstock import outage_today, usage_receipts
+
+    batch=completed_case(48)
+    data=read_warehouse()
+    tickets=usage_receipts.evaluate(data['receipts'],as_of=SNAPSHOT)
+    periods=outage_today.evaluate(daily_accounting(tickets['records'],data['daily']),today=SNAPSHOT)
+    settled=settled_days(periods['records'])
+    for record in batch['stages'][2]['records']:
+        rows=selection_days(record,settled_days=settled,method=record['forecast_method'])
+        field='naive' if record['forecast_method']=='BASELINE' else 'predicted'
+        assert all(row['predicted']==row[field] for row in rows)

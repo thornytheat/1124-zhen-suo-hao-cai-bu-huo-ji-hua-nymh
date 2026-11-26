@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | M1 | 领用流水 | UsageTicket处理证据 | `src/clinicstock/usage_receipts/contracts.py` `src/clinicstock/usage_receipts/algorithm.py` `src/clinicstock/usage_receipts/service.py` `src/clinicstock/usage_receipts/movement_ledger.py` | `tests/test_usage_receipts.py` `tests/test_movement_ledger.py` |
 | M2 | 可售修复 | DailyShelf处理证据 | `src/clinicstock/outage_today/contracts.py` `src/clinicstock/outage_today/algorithm.py` `src/clinicstock/outage_today/service.py` `src/clinicstock/outage_today/stockout_review.py` | `tests/test_outage_today.py` `tests/test_stockout_review.py` |
-| M3 | 用量建模 | DemandDay处理证据 | `src/clinicstock/demand_smoothing/contracts.py` `src/clinicstock/demand_smoothing/algorithm.py` `src/clinicstock/demand_smoothing/service.py` | `tests/test_demand_smoothing.py` |
+| M3 | 用量建模 | DemandDay处理证据 | `src/clinicstock/demand_smoothing/contracts.py` `src/clinicstock/demand_smoothing/algorithm.py` `src/clinicstock/demand_smoothing/service.py` `src/clinicstock/demand_smoothing/model_selection.py` | `tests/test_demand_smoothing.py` `tests/test_model_selection.py` |
 | M4 | 残差区间 | ValidationDemand处理证据 | `src/clinicstock/reorder_bands/contracts.py` `src/clinicstock/reorder_bands/algorithm.py` `src/clinicstock/reorder_bands/service.py` | `tests/test_reorder_bands.py` |
 | M5 | 整箱分配 | PurchaseRequest处理证据 | `src/clinicstock/carton_budget/contracts.py` `src/clinicstock/carton_budget/algorithm.py` `src/clinicstock/carton_budget/service.py` `src/clinicstock/carton_budget/purchase_portfolio.py` | `tests/test_carton_budget.py` `tests/test_purchase_portfolio.py` |
 | M6 | 消耗复盘 | ConsumptionClose处理证据 | `src/clinicstock/consumption_review/contracts.py` `src/clinicstock/consumption_review/algorithm.py` `src/clinicstock/consumption_review/service.py` `src/clinicstock/consumption_review/holdout_comparison.py` | `tests/test_consumption_review.py` `tests/test_holdout_comparison.py` |
@@ -25,3 +25,6 @@
 | TRAP-43 | 没有已核完整窗口时覆盖率留空 | `src/clinicstock/reorder_bands/algorithm.py` | `tests/test_reorder_bands.py::test_group_without_enough_closed_windows_leaves_buffer_unknown` |
 | TRAP-53 | 另一个诊室的预测批次不会改变原诊室预测 | `src/clinicstock/demand_smoothing/algorithm.py` | `tests/test_demand_smoothing.py::test_different_store_does_not_change_forecast` |
 | TRAP-54 | 模型平滑系数变化时拟合标识改变 | `src/clinicstock/demand_smoothing/algorithm.py` | `tests/test_demand_smoothing.py::test_different_smoothing_parameter_invalidates_fingerprint` |
+| TRAP-55 | 非完整或含缺口周、以及未结算日不参与模型与基线选型 | `src/clinicstock/demand_smoothing/model_selection.py` | `tests/test_model_selection.py::test_gap_in_settlement_prevents_a_week_being_counted` |
+| TRAP-56 | 关键耗材某周基线多低估用量时保留现用模型 | `src/clinicstock/demand_smoothing/model_selection.py` | `tests/test_model_selection.py::test_critical_item_keeps_model_when_baseline_underestimates_in_one_week` |
+| TRAP-57 | 换用基线后安全库存用基线残差重算，而非原模型残差 | `src/clinicstock/demand_smoothing/model_selection.py` | `tests/test_model_selection.py::test_reorder_band_input_after_switch_uses_baseline_residuals` |
